@@ -8,6 +8,8 @@ import (
 
 	"qosimmax/grpc-go-course/calculator/calculatorpb"
 
+	"io"
+
 	"google.golang.org/grpc"
 )
 
@@ -23,7 +25,9 @@ func main() {
 
 	c := calculatorpb.NewCalculatorServiceClient(cc)
 
-	doUnary(c)
+	//doUnary(c)
+
+	doServerStreaming(c)
 
 }
 
@@ -40,4 +44,30 @@ func doUnary(c calculatorpb.CalculatorServiceClient) {
 	}
 
 	log.Printf("Response from Sum: %v", res.SumResult)
+}
+
+func doServerStreaming(c calculatorpb.CalculatorServiceClient) {
+	fmt.Println("Starting to do a PrimeDecomposition Server Streaming RPC...")
+
+	req := &calculatorpb.PrimeNumberDecompositionRequest{
+		Number: 100,
+	}
+	stream, err := c.PrimeNumberDecomposition(context.Background(), req)
+	if err != nil {
+		log.Fatalf("error while calling PrimeNumberDecomposition RPC: %v", err)
+	}
+
+	for {
+		res, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			log.Fatalf("Something happened: %v", err)
+		}
+
+		fmt.Println(res.GetPrimeFactor())
+	}
+
 }
